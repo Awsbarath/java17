@@ -5,7 +5,7 @@ pipeline{
     agent any
     tools {
         maven 'Maven 3.9.6'
-        jdk 'jdk-8'
+        jdk 'jdk-17'
     }
 
     parameters{
@@ -23,7 +23,7 @@ pipeline{
             steps{
             gitCheckout(
                 branch: "main",
-                url: "https://github.com/Awsbarath/ci-cd-ecr.git"
+                url: "https://github.com/Awsbarath/java17.git"
             )
             }
         }
