@@ -76,41 +76,97 @@ pipeline{
                }
             }
         }
-        /*stage('Docker Image Build'){
-         when { expression {  params.action == 'create' } }
-            steps{
-               script{
+        stage('Docker Image Build : ECR'){
+          when { expression {  params.action == 'create' } }
+             steps{
+                script{
                    
-                   dockerBuild("${params.ImageName}","${params.ImageTag}","${params.DockerHubUser}")
-               }
+                    dockerBuild("${params.aws_account_id}","${params.Region}","${params.ECR_REPO_NAME}")
+                }
+             }
+         }
+        stage('Docker Image Scan: trivy '){
+          when { expression {  params.action == 'create' } }
+             steps{
+                script{
+                   
+                    dockerImageScan("${params.aws_account_id}","${params.Region}","${params.ECR_REPO_NAME}")
+                }
+             }
+         }
+        stage('Docker Image Push : ECR '){
+          when { expression {  params.action == 'create' } }
+             steps{
+                script{
+                   
+                    dockerImagePush("${params.aws_account_id}","${params.Region}","${params.ECR_REPO_NAME}")
+                }
+             }
+         }   
+        stage('Docker Image Cleanup : ECR '){
+          when { expression {  params.action == 'create' } }
+             steps{
+                script{
+                   
+                    dockerImageCleanup("${params.aws_account_id}","${params.Region}","${params.ECR_REPO_NAME}")
+                }
+             }
+         } 
+        stage('Create EKS Cluster : Terraform'){
+            when { expression {  params.action == 'create' } }
+            steps{
+                script{
+
+                    dir('eks_module') {
+                      sh """
+                          
+                          terraform init 
+                          terraform plan -var 'access_key=$ACCESS_KEY' -var 'secret_key=$SECRET_KEY' -var 'region=${params.Region}' --var-file=./config/terraform.tfvars
+                          terraform apply -var 'access_key=$ACCESS_KEY' -var 'secret_key=$SECRET_KEY' -var 'region=${params.Region}' --var-file=./config/terraform.tfvars --auto-approve
+                      """
+                  }
+                }
             }
         }
-         stage('Docker Image Scan: trivy '){
-         when { expression {  params.action == 'create' } }
-            steps{
-               script{
-                   
-                   dockerImageScan("${params.ImageName}","${params.ImageTag}","${params.DockerHubUser}")
-               }
+        /*
+        stage('Connect to EKS '){
+            when { expression {  params.action == 'create' } }
+        steps{
+
+            script{
+
+                sh """
+                aws configure set aws_access_key_id "$ACCESS_KEY"
+                aws configure set aws_secret_access_key "$SECRET_KEY"
+                aws configure set region "${params.Region}"
+                aws eks --region ${params.Region} update-kubeconfig --name ${params.cluster}
+                """
             }
         }
-        stage('Docker Image Push : DockerHub '){
-         when { expression {  params.action == 'create' } }
+        } 
+        stage('Deployment on EKS Cluster'){
+            when { expression {  params.action == 'create' } }
             steps{
-               script{
-                   
-                   dockerImagePush("${params.ImageName}","${params.ImageTag}","${params.DockerHubUser}")
-               }
+                script{
+                  
+                  def apply = false
+
+                  try{
+                    input message: 'please confirm to deploy on eks', ok: 'Ready to apply the config ?'
+                    apply = true
+                  }catch(err){
+                    apply= false
+                    currentBuild.result  = 'UNSTABLE'
+                  }
+                  if(apply){
+
+                    sh """
+                      kubectl apply -f .
+                    """
+                  }
+                }
             }
-        }   
-        stage('Docker Image Cleanup : DockerHub '){
-         when { expression {  params.action == 'create' } }
-            steps{
-               script{
-                   
-                   dockerImageCleanup("${params.ImageName}","${params.ImageTag}","${params.DockerHubUser}")
-               }
-            }
-        } */     
+        }*/  
     }
 }
+       
