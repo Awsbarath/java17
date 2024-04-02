@@ -16,12 +16,10 @@ pipeline{
         string(name: 'ECR_REPO_NAME', description: "name of the ECR", defaultValue: 'awsbarath')
         string(name: 'cluster', description: "name of the EKS Cluster", defaultValue: 'demo-cluster1')
     }
-    environment{
-
-        ACCESS_KEY = credentials('AWS_ACCESS_KEY_ID')
-        SECRET_KEY = credentials('AWS_SECRET_KEY_ID')
-    
-    } 
+    environment {
+                AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
+                AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_KEY_ID')
+    }
     stages{
          
         stage('Git Checkout'){
@@ -105,10 +103,11 @@ pipeline{
              steps{
                 script{
                     sh '''
-                        ecrLogin=$(aws ecr get-login-password --region us-east-1)
-                        docker login --username AWS --password-stdin 767398141130.dkr.ecr.us-east-1.amazonaws.com <<< $ecrLogin
+                        aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+                        aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+                        aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 767398141130.dkr.ecr.us-east-1.amazonaws.com
                         docker push 767398141130.dkr.ecr.us-east-1.amazonaws.com/awsbarath:latest
-'''
+                    '''
                 }
              }
          }   
