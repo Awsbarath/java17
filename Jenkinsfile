@@ -104,7 +104,7 @@ pipeline{
           when { expression {  params.action == 'create' } }
              steps{
                 script{
-                    echo $USER
+                    sh "echo $USER"
                     //dockerImagePush("${params.aws_account_id}","${params.Region}","${params.ECR_REPO_NAME}")
                     def ecrLogin = sh(script: 'aws ecr get-login-password --region us-east-1', returnStdout: true).trim()
                     sh "docker login --username AWS --password-stdin 767398141130.dkr.ecr.us-east-1.amazonaws.com <<< ${ecrLogin}"
